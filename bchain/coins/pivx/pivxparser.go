@@ -50,7 +50,7 @@ func init() {
 
 // PivXParser handle
 type PivXParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser                         *bchain.BaseParser
 	BitcoinOutputScriptToAddressesFunc btc.OutputScriptToAddressesFunc
 }
@@ -58,8 +58,8 @@ type PivXParser struct {
 // NewPivXParser returns new PivXParser instance
 func NewPivXParser(params *chaincfg.Params, c *btc.Configuration) *PivXParser {
 	p := &PivXParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 	p.BitcoinOutputScriptToAddressesFunc = p.OutputScriptToAddressesFunc
 	p.OutputScriptToAddressesFunc = p.outputScriptToAddresses

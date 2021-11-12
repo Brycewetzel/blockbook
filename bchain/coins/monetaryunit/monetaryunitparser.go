@@ -43,7 +43,7 @@ func init() {
 
 // MonetaryUnitParser handle
 type MonetaryUnitParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser                         *bchain.BaseParser
 	BitcoinOutputScriptToAddressesFunc btc.OutputScriptToAddressesFunc
 }
@@ -51,8 +51,8 @@ type MonetaryUnitParser struct {
 // NewMonetaryUnitParser returns new MonetaryUnitParser instance
 func NewMonetaryUnitParser(params *chaincfg.Params, c *btc.Configuration) *MonetaryUnitParser {
 	p := &MonetaryUnitParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 	p.BitcoinOutputScriptToAddressesFunc = p.OutputScriptToAddressesFunc
 	p.OutputScriptToAddressesFunc = p.outputScriptToAddresses

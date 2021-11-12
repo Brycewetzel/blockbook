@@ -124,9 +124,6 @@ func parseErc20NumericProperty(contractDesc bchain.AddressDescriptor, data strin
 	if has0xPrefix(data) {
 		data = data[2:]
 	}
-	if len(data) > 64 {
-		data = data[:64]
-	}
 	if len(data) == 64 {
 		var n big.Int
 		_, ok := n.SetString(data, 16)
@@ -225,6 +222,7 @@ func (b *EthereumRPC) EthereumTypeGetErc20ContractInfo(contractDesc bchain.Addre
 		cachedContracts[cds] = contract
 		cachedContractsMux.Unlock()
 	}
+
 	return contract, nil
 }
 

@@ -34,12 +34,12 @@ func init() {
 
 // MonacoinParser handle
 type MonacoinParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewMonacoinParser returns new MonacoinParser instance
 func NewMonacoinParser(params *chaincfg.Params, c *btc.Configuration) *MonacoinParser {
-	return &MonacoinParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &MonacoinParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams contains network parameters for the main Monacoin network,

@@ -31,12 +31,12 @@ func init() {
 
 // UnobtaniumParser handle
 type UnobtaniumParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewUnobtaniumParser returns new UnobtaniumParser instance
 func NewUnobtaniumParser(params *chaincfg.Params, c *btc.Configuration) *UnobtaniumParser {
-	return &UnobtaniumParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &UnobtaniumParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams returns network parameters

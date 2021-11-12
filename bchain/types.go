@@ -19,6 +19,8 @@ const (
 	ChainBitcoinType = ChainType(iota)
 	// ChainEthereumType is blockchain derived from ethereum
 	ChainEthereumType
+	// ChainBscTYpe
+	ChainBscType
 )
 
 // errors with specific meaning returned by blockchain rpc
@@ -90,6 +92,7 @@ type Tx struct {
 	Time             int64       `json:"time,omitempty"`
 	Blocktime        int64       `json:"blocktime,omitempty"`
 	CoinSpecificData interface{} `json:"-"`
+	Payload          string      `json:"-"`
 }
 
 // MempoolVin contains data about tx input
@@ -111,16 +114,6 @@ type MempoolTx struct {
 	Blocktime        int64           `json:"blocktime,omitempty"`
 	Erc20            []Erc20Transfer `json:"-"`
 	CoinSpecificData interface{}     `json:"-"`
-}
-
-// VinValues contains information about single transaction input with value
-type VinValues struct {
-	Value common.JSONNumber `json:"value"`
-}
-
-// TxForInValues containing inputs with values
-type TxForInValues struct {
-	Vin []VinValues `json:"vin"`
 }
 
 // Block is block header and list of transactions
@@ -185,6 +178,14 @@ type ChainInfo struct {
 	Consensus       interface{} `json:"consensus,omitempty"`
 }
 
+type TransactionReceipt struct {
+	ContractAddress string `json:"contractAddress"`
+}
+
+type TransactionReceipt struct {
+	ContractAddress string `json:"contractAddress"`
+}
+
 // RPCError defines rpc error returned by backend
 type RPCError struct {
 	Code    int    `json:"code"`
@@ -218,6 +219,14 @@ type Erc20Contract struct {
 	Name     string `json:"name"`
 	Symbol   string `json:"symbol"`
 	Decimals int    `json:"decimals"`
+}
+
+type Erc20ContractInfo struct {
+	Contract string `json:"contract"`
+	Name     string `json:"name"`
+	Symbol   string `json:"symbol"`
+	Decimals int    `json:"decimals"`
+	Icon     string `json:"icon"`
 }
 
 // Erc20Transfer contains a single ERC20 token transfer
@@ -289,6 +298,9 @@ type BlockChain interface {
 	EthereumTypeEstimateGas(params map[string]interface{}) (uint64, error)
 	EthereumTypeGetErc20ContractInfo(contractDesc AddressDescriptor) (*Erc20Contract, error)
 	EthereumTypeGetErc20ContractBalance(addrDesc, contractDesc AddressDescriptor) (*big.Int, error)
+	EthereumTypeGetReceipt(txid string)(*TransactionReceipt, error)
+	// BSC specific
+	BscTypeGetTokenHub()(*Tokenhub, error)
 }
 
 // BlockChainParser defines common interface to parsing and conversions of block chain data
@@ -332,6 +344,9 @@ type BlockChainParser interface {
 	DeriveAddressDescriptorsFromTo(xpub string, change uint32, fromIndex uint32, toIndex uint32) ([]AddressDescriptor, error)
 	// EthereumType specific
 	EthereumTypeGetErc20FromTx(tx *Tx) ([]Erc20Transfer, error)
+	EthereumTypeIsCreateContractTx(tx *Tx) bool
+	// Bsc specific
+	BscTypeGetBEP20FromTx(tx *Tx, thub *Tokenhub) ([]Erc20Transfer, error)
 }
 
 // Mempool defines common interface to mempool

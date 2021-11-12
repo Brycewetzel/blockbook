@@ -34,12 +34,12 @@ func init() {
 
 // DigiByteParser handle
 type DigiByteParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewDigiByteParser returns new DigiByteParser instance
 func NewDigiByteParser(params *chaincfg.Params, c *btc.Configuration) *DigiByteParser {
-	return &DigiByteParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &DigiByteParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams contains network parameters for the main DigiByte network

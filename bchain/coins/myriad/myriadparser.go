@@ -35,12 +35,12 @@ func init() {
 
 // MyriadParser handle
 type MyriadParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewMyriadParser returns new MyriadParser instance
 func NewMyriadParser(params *chaincfg.Params, c *btc.Configuration) *MyriadParser {
-	return &MyriadParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &MyriadParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams contains network parameters for the main Myriad network

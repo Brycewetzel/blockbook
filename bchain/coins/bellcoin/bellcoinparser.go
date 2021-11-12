@@ -34,12 +34,12 @@ func init() {
 
 // BellcoinParser handle
 type BellcoinParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewBellcoinParser returns new BellcoinParser instance
 func NewBellcoinParser(params *chaincfg.Params, c *btc.Configuration) *BellcoinParser {
-	return &BellcoinParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &BellcoinParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams contains network parameters for the main Bellcoin network,

@@ -32,7 +32,7 @@ func init() {
 
 // LiquidParser handle
 type LiquidParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser                      *bchain.BaseParser
 	origOutputScriptToAddressesFunc btc.OutputScriptToAddressesFunc
 }
@@ -40,8 +40,8 @@ type LiquidParser struct {
 // NewLiquidParser returns new LiquidParser instance
 func NewLiquidParser(params *chaincfg.Params, c *btc.Configuration) *LiquidParser {
 	p := &LiquidParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 	p.origOutputScriptToAddressesFunc = p.OutputScriptToAddressesFunc
 	p.OutputScriptToAddressesFunc = p.outputScriptToAddresses

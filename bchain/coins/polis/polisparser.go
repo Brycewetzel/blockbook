@@ -45,12 +45,12 @@ func init() {
 
 // PolisParser handle
 type PolisParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewPolisParser returns new PolisParser instance
 func NewPolisParser(params *chaincfg.Params, c *btc.Configuration) *PolisParser {
-	return &PolisParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &PolisParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams contains network parameters for the main Polis network,

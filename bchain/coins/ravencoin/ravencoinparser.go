@@ -33,15 +33,15 @@ func init() {
 
 // RavencoinParser handle
 type RavencoinParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser *bchain.BaseParser
 }
 
 // NewRavencoinParser returns new RavencoinParser instance
 func NewRavencoinParser(params *chaincfg.Params, c *btc.Configuration) *RavencoinParser {
 	return &RavencoinParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 }
 

@@ -10,15 +10,14 @@ import (
 	"time"
 
 	"github.com/juju/errors"
-	"github.com/trezor/blockbook/bchain/coins/aryacoin"
 	"github.com/trezor/blockbook/bchain"
 	"github.com/trezor/blockbook/bchain/coins/bch"
 	"github.com/trezor/blockbook/bchain/coins/bellcoin"
 	"github.com/trezor/blockbook/bchain/coins/bitcore"
 	"github.com/trezor/blockbook/bchain/coins/bitzeny"
+	"github.com/trezor/blockbook/bchain/coins/bsc"
 	"github.com/trezor/blockbook/bchain/coins/btc"
 	"github.com/trezor/blockbook/bchain/coins/btg"
-	"github.com/trezor/blockbook/bchain/coins/creamcoin"
 	"github.com/trezor/blockbook/bchain/coins/cpuchain"
 	"github.com/trezor/blockbook/bchain/coins/dash"
 	"github.com/trezor/blockbook/bchain/coins/dcr"
@@ -26,16 +25,12 @@ import (
 	"github.com/trezor/blockbook/bchain/coins/digibyte"
 	"github.com/trezor/blockbook/bchain/coins/divi"
 	"github.com/trezor/blockbook/bchain/coins/dogecoin"
-	"github.com/trezor/blockbook/bchain/coins/bitcoinvault"
-	"github.com/trezor/blockbook/bchain/coins/ecash"
 	"github.com/trezor/blockbook/bchain/coins/eth"
-	"github.com/trezor/blockbook/bchain/coins/firo"
 	"github.com/trezor/blockbook/bchain/coins/flo"
 	"github.com/trezor/blockbook/bchain/coins/fujicoin"
 	"github.com/trezor/blockbook/bchain/coins/gamecredits"
 	"github.com/trezor/blockbook/bchain/coins/grs"
 	"github.com/trezor/blockbook/bchain/coins/koto"
-	"github.com/trezor/blockbook/bchain/coins/kmd"
 	"github.com/trezor/blockbook/bchain/coins/liquid"
 	"github.com/trezor/blockbook/bchain/coins/litecoin"
 	"github.com/trezor/blockbook/bchain/coins/monacoin"
@@ -50,15 +45,12 @@ import (
 	"github.com/trezor/blockbook/bchain/coins/ravencoin"
 	"github.com/trezor/blockbook/bchain/coins/ritocoin"
 	"github.com/trezor/blockbook/bchain/coins/snowgem"
-	"github.com/trezor/blockbook/bchain/coins/trezarcoin"
 	"github.com/trezor/blockbook/bchain/coins/unobtanium"
-	"github.com/trezor/blockbook/bchain/coins/verge"
-	"github.com/trezor/blockbook/bchain/coins/rdd"
 	"github.com/trezor/blockbook/bchain/coins/vertcoin"
 	"github.com/trezor/blockbook/bchain/coins/viacoin"
 	"github.com/trezor/blockbook/bchain/coins/vipstarcoin"
+	"github.com/trezor/blockbook/bchain/coins/xzc"
 	"github.com/trezor/blockbook/bchain/coins/zec"
-	"github.com/trezor/blockbook/bchain/coins/yec"
 	"github.com/trezor/blockbook/common"
 )
 
@@ -70,40 +62,26 @@ var BlockChainFactories = make(map[string]blockChainFactory)
 func init() {
 	BlockChainFactories["Bitcoin"] = btc.NewBitcoinRPC
 	BlockChainFactories["Testnet"] = btc.NewBitcoinRPC
-	BlockChainFactories["Signet"] = btc.NewBitcoinRPC
-	BlockChainFactories["Regtest"] = btc.NewBitcoinRPC
-	BlockChainFactories["BcashSV"] = bch.NewBCashRPC
-	BlockChainFactories["BcashSV Testnet"] = bch.NewBCashRPC
-	BlockChainFactories["BitcoinTestnet"] = btc.NewBitcoinRPC
 	BlockChainFactories["Zcash"] = zec.NewZCashRPC
 	BlockChainFactories["Zcash Testnet"] = zec.NewZCashRPC
+	BlockChainFactories["BSC"] = bsc.NewEthereumRPC
+	BlockChainFactories["BSC Testnet"] = bsc.NewEthereumRPC
 	BlockChainFactories["Ethereum"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Classic"] = eth.NewEthereumRPC
 	BlockChainFactories["Ethereum Testnet Ropsten"] = eth.NewEthereumRPC
-	BlockChainFactories["Ethereum Testnet Goerli"] = eth.NewEthereumRPC
-	BlockChainFactories["Ubiq"] = eth.NewEthereumRPC
-	BlockChainFactories["Ubiq Testnet"] = eth.NewEthereumRPC
-	BlockChainFactories["Expanse"] = eth.NewEthereumRPC
 	BlockChainFactories["Bcash"] = bch.NewBCashRPC
-	BlockChainFactories["BcashABC"] = bch.NewBCashRPC
 	BlockChainFactories["Bcash Testnet"] = bch.NewBCashRPC
-	BlockChainFactories["eCash"] = ecash.NewECashRPC
 	BlockChainFactories["Bgold"] = btg.NewBGoldRPC
-	BlockChainFactories["Bgold Testnet"] = btg.NewBGoldRPC
 	BlockChainFactories["Dash"] = dash.NewDashRPC
 	BlockChainFactories["Dash Testnet"] = dash.NewDashRPC
 	BlockChainFactories["Decred"] = dcr.NewDecredRPC
 	BlockChainFactories["Decred Testnet"] = dcr.NewDecredRPC
-	BlockChainFactories["Callisto"] = eth.NewEthereumRPC
 	BlockChainFactories["GameCredits"] = gamecredits.NewGameCreditsRPC
 	BlockChainFactories["Koto"] = koto.NewKotoRPC
 	BlockChainFactories["Koto Testnet"] = koto.NewKotoRPC
 	BlockChainFactories["Litecoin"] = litecoin.NewLitecoinRPC
 	BlockChainFactories["Litecoin Testnet"] = litecoin.NewLitecoinRPC
 	BlockChainFactories["Dogecoin"] = dogecoin.NewDogecoinRPC
-	BlockChainFactories["Dogecoin Testnet"] = dogecoin.NewDogecoinRPC
-	BlockChainFactories["Bitcoinvault"] = bitcoinvault.NewBitcoinvaultRPC
-	BlockChainFactories["Verge"] = verge.NewVergeRPC
 	BlockChainFactories["Vertcoin"] = vertcoin.NewVertcoinRPC
 	BlockChainFactories["Vertcoin Testnet"] = vertcoin.NewVertcoinRPC
 	BlockChainFactories["Namecoin"] = namecoin.NewNamecoinRPC
@@ -119,7 +97,7 @@ func init() {
 	BlockChainFactories["PIVX"] = pivx.NewPivXRPC
 	BlockChainFactories["PIVX Testnet"] = pivx.NewPivXRPC
 	BlockChainFactories["Polis"] = polis.NewPolisRPC
-	BlockChainFactories["Firo"] = firo.NewFiroRPC
+	BlockChainFactories["Zcoin"] = xzc.NewZcoinRPC
 	BlockChainFactories["Fujicoin"] = fujicoin.NewFujicoinRPC
 	BlockChainFactories["Flo"] = flo.NewFloRPC
 	BlockChainFactories["Bellcoin"] = bellcoin.NewBellcoinRPC
@@ -140,13 +118,6 @@ func init() {
 	BlockChainFactories["Omotenashicoin"] = omotenashicoin.NewOmotenashiCoinRPC
 	BlockChainFactories["Omotenashicoin Testnet"] = omotenashicoin.NewOmotenashiCoinRPC
 	BlockChainFactories["BitZeny"] = bitzeny.NewBitZenyRPC
-	BlockChainFactories["Trezarcoin"] = trezarcoin.NewTrezarcoinRPC
-	BlockChainFactories["Ycash"] = yec.NewYCashRPC
-	BlockChainFactories["Creamcoin"] = creamcoin.NewCreamCoinRPC
-	BlockChainFactories["Komodo"] = kmd.NewKmdRPC
-	BlockChainFactories["Aryacoin"] = aryacoin.NewAryaCoinRPC
-	BlockChainFactories["Reddcoin"] = rdd.NewReddRPC
-	BlockChainFactories["Reddcoin Testnet"] = rdd.NewReddRPC
 }
 
 // GetCoinNameFromConfig gets coin name and coin shortcut from config file
@@ -344,6 +315,16 @@ func (c *blockChainWithMetrics) EthereumTypeGetErc20ContractInfo(contractDesc bc
 func (c *blockChainWithMetrics) EthereumTypeGetErc20ContractBalance(addrDesc, contractDesc bchain.AddressDescriptor) (v *big.Int, err error) {
 	defer func(s time.Time) { c.observeRPCLatency("EthereumTypeGetErc20ContractInfo", s, err) }(time.Now())
 	return c.b.EthereumTypeGetErc20ContractBalance(addrDesc, contractDesc)
+}
+
+func (c *blockChainWithMetrics) EthereumTypeGetReceipt(txid string) (receipt *bchain.TransactionReceipt, err error) {
+	defer func(s time.Time) { c.observeRPCLatency("EthereumTypeGetReceipt", s, err) }(time.Now())
+	return c.b.EthereumTypeGetReceipt(txid)
+}
+
+func (c *blockChainWithMetrics) BscTypeGetTokenHub()(th *bchain.Tokenhub, err error) {
+	defer func(s time.Time) { c.observeRPCLatency("BscTypeGetTokenHub", s, err) }(time.Now())
+	return c.b.BscTypeGetTokenHub()
 }
 
 type mempoolWithMetrics struct {

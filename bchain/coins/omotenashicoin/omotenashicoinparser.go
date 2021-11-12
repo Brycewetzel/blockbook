@@ -50,7 +50,7 @@ func init() {
 
 // OmotenashiCoinParser handle
 type OmotenashiCoinParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser                         *bchain.BaseParser
 	BitcoinOutputScriptToAddressesFunc btc.OutputScriptToAddressesFunc
 }
@@ -58,8 +58,8 @@ type OmotenashiCoinParser struct {
 // NewOmotenashiCoinParser returns new OmotenashiCoinParser instance
 func NewOmotenashiCoinParser(params *chaincfg.Params, c *btc.Configuration) *OmotenashiCoinParser {
 	p := &OmotenashiCoinParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 	p.BitcoinOutputScriptToAddressesFunc = p.OutputScriptToAddressesFunc
 	p.OutputScriptToAddressesFunc = p.outputScriptToAddresses

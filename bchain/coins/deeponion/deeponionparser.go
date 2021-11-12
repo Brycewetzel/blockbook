@@ -27,15 +27,15 @@ func init() {
 
 // DeepOnionParser handle
 type DeepOnionParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser *bchain.BaseParser
 }
 
 // NewDeepOnionParser returns new DeepOnionParser instance
 func NewDeepOnionParser(params *chaincfg.Params, c *btc.Configuration) *DeepOnionParser {
 	return &DeepOnionParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 }
 

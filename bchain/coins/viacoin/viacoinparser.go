@@ -42,12 +42,12 @@ func init() {
 
 // ViacoinParser handle
 type ViacoinParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewViacoinParser returns new VertcoinParser instance
 func NewViacoinParser(params *chaincfg.Params, c *btc.Configuration) *ViacoinParser {
-	return &ViacoinParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &ViacoinParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams returns network parameters

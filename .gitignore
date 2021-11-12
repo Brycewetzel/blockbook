@@ -8,7 +8,6 @@ debug*
 docker/blockbook
 build/pkg-defs
 build/blockbook
-build/blockchaincfg.json
 build/ldb
 build/sst_dump
 build/*.deb

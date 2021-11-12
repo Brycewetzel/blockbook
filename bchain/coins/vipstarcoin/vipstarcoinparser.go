@@ -40,12 +40,12 @@ func init() {
 
 // VIPSTARCOINParser handle
 type VIPSTARCOINParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 }
 
 // NewVIPSTARCOINParser returns new VIPSTARCOINParser instance
 func NewVIPSTARCOINParser(params *chaincfg.Params, c *btc.Configuration) *VIPSTARCOINParser {
-	return &VIPSTARCOINParser{BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c)}
+	return &VIPSTARCOINParser{BitcoinParser: btc.NewBitcoinParser(params, c)}
 }
 
 // GetChainParams contains network parameters for the main VIPSTARCOIN network,

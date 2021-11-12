@@ -36,15 +36,15 @@ func init() {
 
 // FloParser handle
 type FloParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser *bchain.BaseParser
 }
 
 // NewFloParser returns new FloParser instance
 func NewFloParser(params *chaincfg.Params, c *btc.Configuration) *FloParser {
 	return &FloParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 }
 

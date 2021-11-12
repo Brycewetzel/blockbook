@@ -73,8 +73,6 @@ var (
 
 	noTxCache = flag.Bool("notxcache", false, "disable tx cache")
 
-	enableSubNewTx = flag.Bool("enablesubnewtx", false, "enable support for subscribing to all new transactions")
-
 	computeColumnStats  = flag.Bool("computedbstats", false, "compute column stats and exit")
 	computeFeeStatsFlag = flag.Bool("computefeestats", false, "compute fee stats for blocks in blockheight-blockuntil range and exit")
 	dbStatsPeriodHours  = flag.Int("dbstatsperiod", 24, "period of db stats collection in hours, 0 disables stats collection")
@@ -84,13 +82,11 @@ var (
 
 	// resync mempool at least each resyncMempoolPeriodMs (could be more often if invoked by message from ZeroMQ)
 	resyncMempoolPeriodMs = flag.Int("resyncmempoolperiod", 60017, "resync mempool period in milliseconds")
-
-	spendingIndex = flag.Bool("spendingindex", false, "if true, create index of spending transactions")
 )
 
 var (
 	chanSyncIndex                 = make(chan struct{})
-	chanSyncMempool               = make(chan struct{})
+	chanSyncMempool               = make(chan struct{}, 10000000) // s.chanNewTx = make(chan ethcommon.Hash, 10000000)
 	chanStoreInternalState        = make(chan struct{})
 	chanSyncIndexDone             = make(chan struct{})
 	chanSyncMempoolDone           = make(chan struct{})
@@ -177,7 +173,7 @@ func mainWithExitCode() int {
 		return exitCodeFatal
 	}
 
-	index, err = db.NewRocksDB(*dbPath, *dbCache, *dbMaxOpenFiles, chain.GetChainParser(), metrics, *spendingIndex)
+	index, err = db.NewRocksDBWithChain(*dbPath, *dbCache, *dbMaxOpenFiles, metrics, chain)
 	if err != nil {
 		glog.Error("rocksDB: ", err)
 		return exitCodeFatal
@@ -210,10 +206,10 @@ func mainWithExitCode() int {
 	}
 
 	if internalState.DbState != common.DbStateClosed {
-		if internalState.DbState == common.DbStateInconsistent {
-			glog.Error("internalState: database is in inconsistent state and cannot be used")
-			return exitCodeFatal
-		}
+		//if internalState.DbState == common.DbStateInconsistent {
+		//	glog.Error("internalState: database is in inconsistent state and cannot be used")
+		//	return exitCodeFatal
+		//}
 		glog.Warning("internalState: database was left in open state, possibly previous ungraceful shutdown")
 	}
 
@@ -320,6 +316,17 @@ func mainWithExitCode() int {
 	}
 	go storeInternalStateLoop()
 
+	// update blockbook sync metrics
+	fnOnNewBlockMetrics := func(hash string, height uint32) {
+		ci, err := chain.GetChainInfo()
+		if err != nil {
+			ci = &bchain.ChainInfo{}
+		}
+		metrics.BackendBlocks.Set(float64(ci.Blocks))
+		metrics.BlockbookBestHeight.Set(float64(height))
+	}
+	callbacksOnNewBlock = append(callbacksOnNewBlock, fnOnNewBlockMetrics)
+
 	if publicServer != nil {
 		// start full public interface
 		callbacksOnNewBlock = append(callbacksOnNewBlock, publicServer.OnNewBlock)
@@ -389,7 +396,7 @@ func getBlockChainWithRetry(coin string, configfile string, pushHandler func(bch
 }
 
 func startInternalServer() (*server.InternalServer, error) {
-	internalServer, err := server.NewInternalServer(*internalBinding, *certFiles, index, chain, mempool, txCache, metrics, internalState)
+	internalServer, err := server.NewInternalServer(*internalBinding, *certFiles, index, chain, mempool, txCache, internalState)
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +416,7 @@ func startInternalServer() (*server.InternalServer, error) {
 
 func startPublicServer() (*server.PublicServer, error) {
 	// start public server in limited functionality, extend it after sync is finished by calling ConnectFullPublicInterface
-	publicServer, err := server.NewPublicServer(*publicBinding, *certFiles, index, chain, mempool, txCache, *explorerURL, metrics, internalState, *debugMode, *enableSubNewTx)
+	publicServer, err := server.NewPublicServer(*publicBinding, *certFiles, index, chain, mempool, txCache, *explorerURL, metrics, internalState, *debugMode)
 	if err != nil {
 		return nil, err
 	}
@@ -455,7 +462,7 @@ func performRollback() error {
 }
 
 func blockbookAppInfoMetric(db *db.RocksDB, chain bchain.BlockChain, txCache *db.TxCache, is *common.InternalState, metrics *common.Metrics) error {
-	api, err := api.NewWorker(db, chain, mempool, txCache, metrics, is)
+	api, err := api.NewWorker(db, chain, mempool, txCache, is)
 	if err != nil {
 		return err
 	}
@@ -471,8 +478,10 @@ func blockbookAppInfoMetric(db *db.RocksDB, chain bchain.BlockChain, txCache *db
 		"backend_version":          si.Backend.Version,
 		"backend_subversion":       si.Backend.Subversion,
 		"backend_protocol_version": si.Backend.ProtocolVersion}).Set(float64(0))
-	metrics.BackendBestHeight.Set(float64(si.Backend.Blocks))
+
+	metrics.BackendBlocks.Set(float64(si.Backend.Blocks))
 	metrics.BlockbookBestHeight.Set(float64(si.Blockbook.BestHeight))
+
 	return nil
 }
 
@@ -663,6 +672,7 @@ func pushSynchronizationHandler(nt bchain.NotificationType) {
 		chanSyncIndex <- struct{}{}
 	} else if nt == bchain.NotificationNewTx {
 		chanSyncMempool <- struct{}{}
+		metrics.BufferedNewTx.Set(float64(len(chanSyncMempool)))
 	} else {
 		glog.Error("MQ: unknown notification sent")
 	}
@@ -710,7 +720,7 @@ func normalizeName(s string) string {
 func computeFeeStats(stopCompute chan os.Signal, blockFrom, blockTo int, db *db.RocksDB, chain bchain.BlockChain, txCache *db.TxCache, is *common.InternalState, metrics *common.Metrics) error {
 	start := time.Now()
 	glog.Info("computeFeeStats start")
-	api, err := api.NewWorker(db, chain, mempool, txCache, metrics, is)
+	api, err := api.NewWorker(db, chain, mempool, txCache, is)
 	if err != nil {
 		return err
 	}

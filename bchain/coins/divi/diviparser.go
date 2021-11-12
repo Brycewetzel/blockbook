@@ -37,7 +37,7 @@ func init() {
 
 // DivicoinParser handle
 type DivicoinParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	baseparser                         *bchain.BaseParser
 	BitcoinOutputScriptToAddressesFunc btc.OutputScriptToAddressesFunc
 }
@@ -45,8 +45,8 @@ type DivicoinParser struct {
 // NewDiviParser returns new DivicoinParser instance
 func NewDiviParser(params *chaincfg.Params, c *btc.Configuration) *DivicoinParser {
 	p := &DivicoinParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		baseparser:        &bchain.BaseParser{},
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		baseparser:    &bchain.BaseParser{},
 	}
 	p.BitcoinOutputScriptToAddressesFunc = p.OutputScriptToAddressesFunc
 	p.OutputScriptToAddressesFunc = p.outputScriptToAddresses

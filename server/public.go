@@ -56,13 +56,11 @@ type PublicServer struct {
 	debug            bool
 }
 
-var hostURL string = ""
-
 // NewPublicServer creates new public server http interface to blockbook and returns its handle
 // only basic functionality is mapped, to map all functions, call
-func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bchain.BlockChain, mempool bchain.Mempool, txCache *db.TxCache, explorerURL string, metrics *common.Metrics, is *common.InternalState, debugMode bool, enableSubNewTx bool) (*PublicServer, error) {
+func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bchain.BlockChain, mempool bchain.Mempool, txCache *db.TxCache, explorerURL string, metrics *common.Metrics, is *common.InternalState, debugMode bool) (*PublicServer, error) {
 
-	api, err := api.NewWorker(db, chain, mempool, txCache, metrics, is)
+	api, err := api.NewWorker(db, chain, mempool, txCache, is)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +70,7 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 		return nil, err
 	}
 
-	websocket, err := NewWebsocketServer(db, chain, mempool, txCache, metrics, is, enableSubNewTx)
+	websocket, err := NewWebsocketServer(db, chain, mempool, txCache, metrics, is)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +104,6 @@ func NewPublicServer(binding string, certFiles string, db *db.RocksDB, chain bch
 
 	// map only basic functions, the rest is enabled by method MapFullPublicInterface
 	serveMux.Handle(path+"favicon.ico", http.FileServer(http.Dir("./static/")))
-	serveMux.Handle(path+"robots.txt", http.FileServer(http.Dir("./static/")))
 	serveMux.Handle(path+"static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static/"))))
 	// default handler
 	serveMux.HandleFunc(path, s.htmlTemplateHandler(s.explorerIndex))
@@ -155,7 +152,7 @@ func (s *PublicServer) ConnectFullPublicInterface() {
 
 	var apiDefault int
 	// ethereum supports only api V2
-	if s.chainParser.GetChainType() == bchain.ChainEthereumType {
+	if s.chainParser.GetChainType() == bchain.ChainEthereumType || s.chainParser.GetChainType() == bchain.ChainBscType {
 		apiDefault = apiV2
 	} else {
 		apiDefault = apiV1
@@ -184,6 +181,7 @@ func (s *PublicServer) ConnectFullPublicInterface() {
 	serveMux.HandleFunc(path+"api/v2/tx-specific/", s.jsonHandler(s.apiTxSpecific, apiV2))
 	serveMux.HandleFunc(path+"api/v2/tx/", s.jsonHandler(s.apiTx, apiV2))
 	serveMux.HandleFunc(path+"api/v2/address/", s.jsonHandler(s.apiAddress, apiV2))
+	serveMux.HandleFunc(path+"api/v2/token/", s.jsonHandler(s.apiTokenInfo, apiV2))
 	serveMux.HandleFunc(path+"api/v2/xpub/", s.jsonHandler(s.apiXpub, apiV2))
 	serveMux.HandleFunc(path+"api/v2/utxo/", s.jsonHandler(s.apiUtxo, apiV2))
 	serveMux.HandleFunc(path+"api/v2/block/", s.jsonHandler(s.apiBlock, apiV2))
@@ -193,6 +191,8 @@ func (s *PublicServer) ConnectFullPublicInterface() {
 	serveMux.HandleFunc(path+"api/v2/balancehistory/", s.jsonHandler(s.apiBalanceHistory, apiDefault))
 	serveMux.HandleFunc(path+"api/v2/tickers/", s.jsonHandler(s.apiTickers, apiV2))
 	serveMux.HandleFunc(path+"api/v2/tickers-list/", s.jsonHandler(s.apiTickersList, apiV2))
+	serveMux.HandleFunc(path+"api/v2/tokenlist", s.jsonHandler(s.apiTokenList, apiV2))
+
 	// socket.io interface
 	serveMux.Handle(path+"socket.io/", s.socketio.GetHandler())
 	// websocket interface
@@ -260,19 +260,8 @@ func joinURL(base string, part string) string {
 	return part
 }
 
-func getHostURL() string {
-	glog.Info("Server request host: ", hostURL)
-	return hostURL
-}
-
 func getFunctionName(i interface{}) string {
-	name := runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
-	start := strings.LastIndex(name, ".")
-	end := strings.LastIndex(name, "-")
-	if start > 0 && end > start {
-		name = name[start+1 : end]
-	}
-	return name
+	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
 
 func (s *PublicServer) jsonHandler(handler func(r *http.Request, apiVersion int) (interface{}, error), apiVersion int) func(w http.ResponseWriter, r *http.Request) {
@@ -280,13 +269,12 @@ func (s *PublicServer) jsonHandler(handler func(r *http.Request, apiVersion int)
 		Text       string `json:"error"`
 		HTTPStatus int    `json:"-"`
 	}
-	handlerName := getFunctionName(handler)
 	return func(w http.ResponseWriter, r *http.Request) {
 		var data interface{}
 		var err error
 		defer func() {
 			if e := recover(); e != nil {
-				glog.Error(handlerName, " recovered from panic: ", e)
+				glog.Error(getFunctionName(handler), " recovered from panic: ", e)
 				debug.PrintStack()
 				if s.debug {
 					data = jsonError{fmt.Sprint("Internal server error: recovered from panic ", e), http.StatusInternalServerError}
@@ -302,9 +290,7 @@ func (s *PublicServer) jsonHandler(handler func(r *http.Request, apiVersion int)
 			if err != nil {
 				glog.Warning("json encode ", err)
 			}
-			s.metrics.ExplorerPendingRequests.With((common.Labels{"method": handlerName})).Dec()
 		}()
-		s.metrics.ExplorerPendingRequests.With((common.Labels{"method": handlerName})).Inc()
 		data, err = handler(r, apiVersion)
 		if err != nil || data == nil {
 			if apiErr, ok := err.(*api.APIError); ok {
@@ -315,7 +301,7 @@ func (s *PublicServer) jsonHandler(handler func(r *http.Request, apiVersion int)
 				}
 			} else {
 				if err != nil {
-					glog.Error(handlerName, " error: ", err)
+					glog.Error(getFunctionName(handler), " error: ", err)
 				}
 				if s.debug {
 					if data != nil {
@@ -349,15 +335,13 @@ func (s *PublicServer) newTemplateDataWithError(text string) *TemplateData {
 }
 
 func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r *http.Request) (tpl, *TemplateData, error)) func(w http.ResponseWriter, r *http.Request) {
-	handlerName := getFunctionName(handler)
 	return func(w http.ResponseWriter, r *http.Request) {
-		hostURL = r.Host + r.URL.Path
 		var t tpl
 		var data *TemplateData
 		var err error
 		defer func() {
 			if e := recover(); e != nil {
-				glog.Error(handlerName, " recovered from panic: ", e)
+				glog.Error(getFunctionName(handler), " recovered from panic: ", e)
 				debug.PrintStack()
 				t = errorInternalTpl
 				if s.debug {
@@ -377,9 +361,7 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 					glog.Error(err)
 				}
 			}
-			s.metrics.ExplorerPendingRequests.With((common.Labels{"method": handlerName})).Dec()
 		}()
-		s.metrics.ExplorerPendingRequests.With((common.Labels{"method": handlerName})).Inc()
 		if s.debug {
 			// reload templates on each request
 			// to reflect changes during development
@@ -396,7 +378,7 @@ func (s *PublicServer) htmlTemplateHandler(handler func(w http.ResponseWriter, r
 				}
 			} else {
 				if err != nil {
-					glog.Error(handlerName, " error: ", err)
+					glog.Error(getFunctionName(handler), " error: ", err)
 				}
 				if s.debug {
 					data = s.newTemplateDataWithError(fmt.Sprintf("Internal server error: %v, data %+v", err, data))
@@ -461,12 +443,6 @@ func (s *PublicServer) parseTemplates() []*template.Template {
 		"setTxToTemplateData":      setTxToTemplateData,
 		"isOwnAddress":             isOwnAddress,
 		"isOwnAddresses":           isOwnAddresses,
-		"toJSON":                   toJSON,
-		"addressEquals":            addressEquals,
-		"ToUpper": 					strings.ToUpper,
-		"ToLower": 					strings.ToLower,
-		"normalizeName": 			normalizeName,
-		"getHostURL":				getHostURL,
 	}
 	var createTemplate func(filenames ...string) *template.Template
 	if s.debug {
@@ -512,7 +488,7 @@ func (s *PublicServer) parseTemplates() []*template.Template {
 	t[indexTpl] = createTemplate("./static/templates/index.html", "./static/templates/base.html")
 	t[blocksTpl] = createTemplate("./static/templates/blocks.html", "./static/templates/paging.html", "./static/templates/base.html")
 	t[sendTransactionTpl] = createTemplate("./static/templates/sendtx.html", "./static/templates/base.html")
-	if s.chainParser.GetChainType() == bchain.ChainEthereumType {
+	if s.chainParser.GetChainType() == bchain.ChainEthereumType || s.chainParser.GetChainType() == bchain.ChainBscType {
 		t[txTpl] = createTemplate("./static/templates/tx.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/base.html")
 		t[addressTpl] = createTemplate("./static/templates/address.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/paging.html", "./static/templates/base.html")
 		t[blockTpl] = createTemplate("./static/templates/block.html", "./static/templates/txdetail_ethereumtype.html", "./static/templates/paging.html", "./static/templates/base.html")
@@ -532,18 +508,6 @@ func formatUnixTime(ut int64) string {
 
 func formatTime(t time.Time) string {
 	return t.Format(time.RFC1123)
-}
-
-func toJSON(data interface{}) string {
-	json, err := json.Marshal(data)
-	if err != nil {
-		return ""
-	}
-	return string(json)
-}
-
-func addressEquals(addresses []string, value string) bool {
-	return len(addresses) == 1 && addresses[0] == value
 }
 
 // for now return the string as it is
@@ -589,12 +553,6 @@ func isOwnAddresses(td *TemplateData, addresses []string) bool {
 		return isOwnAddress(td, addresses[0])
 	}
 	return false
-}
-
-func normalizeName(s string) string {
-	s = strings.ToLower(s)
-	s = strings.ReplaceAll(s, " ", "-")
-	return s
 }
 
 func (s *PublicServer) explorerTx(w http.ResponseWriter, r *http.Request) (tpl, *TemplateData, error) {
@@ -1020,9 +978,6 @@ func (s *PublicServer) apiTxSpecific(r *http.Request, apiVersion int) (interface
 	var err error
 	s.metrics.ExplorerViews.With(common.Labels{"action": "api-tx-specific"}).Inc()
 	tx, err = s.chain.GetTransactionSpecific(&bchain.Tx{Txid: txid})
-	if err == bchain.ErrTxNotFound {
-		return nil, api.NewAPIError(fmt.Sprintf("Transaction '%v' not found", txid), true)
-	}
 	return tx, err
 }
 
@@ -1044,6 +999,75 @@ func (s *PublicServer) apiAddress(r *http.Request, apiVersion int) (interface{},
 		return s.api.AddressToV1(address), nil
 	}
 	return address, err
+}
+
+func (s *PublicServer) apiTokenList(r *http.Request, apiVersion int) (interface{}, error) {
+	tokens, err := s.api.GetEthereumTypeErc20TokenList()
+	if err != nil {
+		return nil, api.NewAPIError("fail to fetch token list", true)
+	}
+
+	erc20Infos := make([]*bchain.Erc20ContractInfo, 0)
+	for _, t := range tokens {
+		if len(t.Contract) > 0 {
+			var iconUrlHandle string
+			if s.chain.GetCoinName() == "BSC" {
+				iconUrlHandle = "bsc"
+			} else if s.chain.GetCoinName() == "BSCTestnet" {
+				iconUrlHandle = "bsct"
+			}
+			iconUrl := fmt.Sprintf("https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/%s/assets/%s/logo.png",
+				iconUrlHandle, t.Contract)
+			info := &bchain.Erc20ContractInfo{
+				Contract: t.Contract,
+				Name:     t.Name,
+				Symbol:   t.Symbol,
+				Decimals: t.Decimals,
+				Icon:     iconUrl,
+			}
+
+			erc20Infos = append(erc20Infos, info)
+		}
+	}
+
+	return erc20Infos, nil
+}
+
+func (s *PublicServer) apiTokenInfo(r *http.Request, apiVersion int) (interface{}, error) {
+	var address string
+	i := strings.LastIndexByte(r.URL.Path, '/')
+	if i > 0 {
+		address = r.URL.Path[i+1:]
+	}
+	if len(address) == 0 {
+		return nil, api.NewAPIError("Missing address", true)
+	}
+
+	addrDesc, err := s.chainParser.GetAddrDescFromAddress(address)
+	if err != nil {
+		return nil, api.NewAPIError("address illegal", true)
+	}
+
+	info, err := s.chain.EthereumTypeGetErc20ContractInfo(addrDesc)
+	if err != nil {
+		return nil, api.NewAPIError("fetch contract info failed", true)
+	}
+
+	if info == nil {
+		return nil, api.NewAPIError("fail to fetch token info", true)
+	}
+
+	iconUrl := fmt.Sprintf("https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/%s/assets/%s/logo.png", s.chain.GetCoinName(), address)
+
+	erc20Info := &bchain.Erc20ContractInfo{
+		Contract: info.Contract,
+		Name:     info.Name,
+		Symbol:   info.Symbol,
+		Decimals: info.Decimals,
+		Icon:     iconUrl,
+	}
+
+	return erc20Info, nil
 }
 
 func (s *PublicServer) apiXpub(r *http.Request, apiVersion int) (interface{}, error) {

@@ -53,7 +53,7 @@ func init() {
 
 // BCashParser handle
 type BCashParser struct {
-	*btc.BitcoinLikeParser
+	*btc.BitcoinParser
 	AddressFormat AddressFormat
 }
 
@@ -71,8 +71,8 @@ func NewBCashParser(params *chaincfg.Params, c *btc.Configuration) (*BCashParser
 		return nil, fmt.Errorf("Unknown address format: %s", c.AddressFormat)
 	}
 	p := &BCashParser{
-		BitcoinLikeParser: btc.NewBitcoinLikeParser(params, c),
-		AddressFormat:     format,
+		BitcoinParser: btc.NewBitcoinParser(params, c),
+		AddressFormat: format,
 	}
 	p.OutputScriptToAddressesFunc = p.outputScriptToAddresses
 	return p, nil

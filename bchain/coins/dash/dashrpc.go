@@ -27,6 +27,7 @@ func NewDashRPC(config json.RawMessage, pushHandler func(bchain.NotificationType
 		b.(*btc.BitcoinRPC),
 	}
 	s.RPCMarshaler = btc.JSONMarshalerV1{}
+	s.ChainConfig.SupportsEstimateSmartFee = false
 
 	return s, nil
 }
